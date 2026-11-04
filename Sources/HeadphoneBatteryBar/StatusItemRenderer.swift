@@ -5,20 +5,23 @@ import BatteryCore
 enum StatusItemRenderer {
     static func image(for snapshot: HeadsetSnapshot) -> NSImage {
         let font = NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .medium)
-        let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: NSColor.black]
+        let style = BatteryIconStyle(reading: snapshot.reading)
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: font, .foregroundColor: style?.color ?? NSColor.black,
+        ]
         let text = snapshot.percentText as NSString
         let textSize = text.size(withAttributes: attributes)
         let gaugeSize: CGFloat = 20
         let gap: CGFloat = 4
         let height: CGFloat = 22
-        let colored = BatteryIconStyle(reading: snapshot.reading) != nil
+        let colored = style != nil
         let width = ceil(gaugeSize + gap + textSize.width)
         let headphones = NSImage(systemSymbolName: "headphones", accessibilityDescription: nil)?
             .withSymbolConfiguration(.init(pointSize: 11, weight: .semibold))
 
         let image = NSImage(size: NSSize(width: width, height: height), flipped: false) { _ in
             let rect = NSRect(x: 0, y: 1, width: gaugeSize, height: gaugeSize)
-            // Colored states use a separate overlay; only the percentage is templated.
+            // The overlay draws the colored icon; this image supplies matching text.
             if !colored {
                 drawGauge(percent: snapshot.reading?.percent, in: rect)
                 headphones?.draw(in: NSRect(x: 4, y: 5, width: 12, height: 12))
@@ -29,7 +32,7 @@ enum StatusItemRenderer {
             )
             return true
         }
-        image.isTemplate = true
+        image.isTemplate = !colored
         return image
     }
 

@@ -12,6 +12,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var timer: Timer?
     private var generation = 0
     private var launchAtLoginError: String?
+    private let animationPreferenceKey = "chargingAnimationEnabled"
+
+    private var chargingAnimationEnabled: Bool {
+        let defaults = UserDefaults.standard
+        if defaults.object(forKey: animationPreferenceKey) != nil {
+            return defaults.bool(forKey: animationPreferenceKey)
+        }
+        return !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -33,7 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         notifications.addObserver(
             self, selector: #selector(willSleep), name: NSWorkspace.willSleepNotification, object: nil)
         notifications.addObserver(
-            self, selector: #selector(updateBatteryIcon),
+            self, selector: #selector(accessibilityOptionsChanged),
             name: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil)
     }
 
@@ -90,8 +99,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         batteryIcon.update(
             reading: snapshot.reading,
             imageWidth: statusItem.button?.image?.size.width ?? 0,
-            reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+            animateCharging: chargingAnimationEnabled
         )
+    }
+
+    @objc private func accessibilityOptionsChanged() {
+        updateBatteryIcon()
+        rebuildMenu()
+    }
+
+    @objc private func toggleChargingAnimation() {
+        UserDefaults.standard.set(!chargingAnimationEnabled, forKey: animationPreferenceKey)
+        updateBatteryIcon()
+        rebuildMenu()
     }
 
     private func rebuildMenu() {
@@ -111,6 +131,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refreshItem.isEnabled = refreshTask == nil
         menu.addItem(refreshItem)
         menu.addItem(action("Open G HUB", selector: #selector(openGHub)))
+        let animation = action("Charging Animation", selector: #selector(toggleChargingAnimation))
+        animation.state = chargingAnimationEnabled ? .on : .off
+        menu.addItem(animation)
         let login = action(
             SMAppService.mainApp.status == .requiresApproval ? "Allow Launch at Login…" : "Launch at Login",
             selector: #selector(toggleLaunchAtLogin)

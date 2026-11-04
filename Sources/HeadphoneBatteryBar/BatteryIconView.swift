@@ -20,14 +20,13 @@ enum BatteryIconStyle {
     var color: NSColor { self == .charging ? .systemGreen : .systemRed }
 }
 
-/// Colors the gauge and headphones while the percentage keeps native menu-bar tinting.
+/// Colors the gauge and headphones to match the percentage.
 @MainActor
 final class BatteryIconView: NSView {
     private let track = CAShapeLayer()
     private let charge = CAShapeLayer()
-    /// Translucent extension that fills from the real level toward 100% while charging.
+    /// Bright sweep that fills the circle while charging, above a dim actual-level arc.
     private let fill = CAShapeLayer()
-    private var fillLevel: CGFloat?
     private let headphones = CALayer()
     private let headphonesMask = CALayer()
     private var imageWidth: CGFloat = 0
@@ -57,7 +56,7 @@ final class BatteryIconView: NSView {
     // Let the status-bar button receive clicks anywhere, including on the ring.
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
 
-    func update(reading: BatteryReading?, imageWidth: CGFloat, reduceMotion: Bool) {
+    func update(reading: BatteryReading?, imageWidth: CGFloat, animateCharging: Bool) {
         self.imageWidth = imageWidth
         style = BatteryIconStyle(reading: reading)
         isHidden = style == nil
@@ -69,40 +68,39 @@ final class BatteryIconView: NSView {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         charge.strokeEnd = level
+        charge.opacity = style == .charging && animateCharging ? 0.3 : 1
         updateColors()
         CATransaction.commit()
         needsLayout = true
 
-        // Near full, a tiny extension would only twitch, so the ring stays steady.
-        if style == .charging && !reduceMotion && reading.percent < 95 {
-            startFilling(from: level)
+        if style == .charging && animateCharging {
+            startFilling()
         } else {
             stopFilling()
         }
     }
 
-    /// Repeats a forward-only fill: fade in at the real level, grow to 100%,
-    /// fade out at full, then restart invisibly. The solid arc never moves.
-    private func startFilling(from level: CGFloat) {
-        guard fillLevel != level || fill.animation(forKey: "chargingFill") == nil else { return }
-        fillLevel = level
+    /// A clear, forward-only sweep grows around the whole circle and fades at full.
+    /// Its phase continues across refreshes, including when the battery level changes.
+    private func startFilling() {
+        guard fill.animation(forKey: "chargingFill") == nil else { return }
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        fill.strokeStart = level
-        fill.strokeEnd = level
+        fill.strokeStart = 0
+        fill.strokeEnd = 0
         CATransaction.commit()
 
-        let duration: CFTimeInterval = 3.5
+        let duration: CFTimeInterval = 2.4
         let grow = CAKeyframeAnimation(keyPath: "strokeEnd")
         grow.duration = duration
-        grow.values = [level, 1, 1]
-        grow.keyTimes = [0, 0.7, 1]
+        grow.values = [0, 1, 1]
+        grow.keyTimes = [0, 0.8, 1]
         grow.timingFunctions = [CAMediaTimingFunction(name: .easeInEaseOut), CAMediaTimingFunction(name: .linear)]
 
         let fade = CAKeyframeAnimation(keyPath: "opacity")
         fade.duration = duration
-        fade.values = [0, 0.45, 0.45, 0, 0]
-        fade.keyTimes = [0, 0.15, 0.7, 0.95, 1]
+        fade.values = [0, 1, 1, 0, 0]
+        fade.keyTimes = [0, 0.05, 0.8, 0.95, 1]
 
         let group = CAAnimationGroup()
         group.animations = [grow, fade]
@@ -113,7 +111,6 @@ final class BatteryIconView: NSView {
 
     private func stopFilling() {
         fill.removeAllAnimations()
-        fillLevel = nil
     }
 
     override func layout() {
