@@ -1,20 +1,44 @@
 # Headphone Battery Bar
 
-A small native macOS menu-bar app for the Logitech G522 LIGHTSPEED. A thin circular battery gauge surrounds a headphone symbol, followed by the remaining percentage. It uses the same sizes, type, and gauge style as [AI Usage Bar](https://github.com/raulconchello/ai-usage-bar). While charging, the headphones, circle, and percentage turn green. Only the unfilled portion of the ring animates: it grows from the current battery level toward 100% over 1.4 seconds, fades out, then rests for 2.2 seconds before repeating. The actual battery arc and percentage stay steady throughout. When unplugged with a displayed battery level below 15%, the icon, circle, and percentage turn red without animation. Charging takes priority over the low-battery color. Other states use the normal menu-bar tint. The animation uses Core Animation and stops when charging ends or the data becomes unavailable.
+A **vibe-coded project**, built and iterated with AI to keep my headphones' battery level visible in the macOS menu bar. I wanted to check the battery at a glance without opening Logitech G HUB.
 
-The **Charging Animation** menu item turns the motion on or off for this app. Until you choose a preference, it follows macOS Reduce Motion. An explicit choice overrides that default without changing any system setting.
+The app is written in Swift and AppKit for the **Logitech G522 LIGHTSPEED**. A circular battery gauge surrounds a headphone icon, with the percentage beside it.
 
-Click the item to see battery and charging details, refresh, open G HUB, change Launch at Login, or quit. The app refreshes every 30 seconds and immediately after waking from sleep. If the headset disconnects or G HUB becomes unavailable, the percentage becomes a dash and the menu explains the status. It automatically recovers on the next refresh.
+- **Charging:** the icon, circle, and percentage turn green. An optional animation fills only the gap from the current charge toward 100%, then pauses before repeating. The actual battery arc and number stay steady.
+- **Low battery:** below 15% when unplugged, the icon, circle, and percentage turn red.
+- **Disconnected or unavailable:** the percentage becomes a dash, with details in the menu.
 
-## Install
+Battery readings refresh every 30 seconds and after waking from sleep.
 
-Requirements: macOS 14 or newer, Xcode (or its command-line tools with Swift 6.1+), and Logitech G HUB running with the G522 connected through its LIGHTSPEED receiver or USB. Bluetooth-only use is not supported by this app.
+## Requirements
+
+- macOS 14 or newer.
+- Xcode or Xcode Command Line Tools with **Swift 6.1 or newer**.
+- [Logitech G HUB](https://www.logitechg.com/en-us/software/ghub), running in the background.
+- A G522 connected through its LIGHTSPEED receiver or USB. Bluetooth-only use is not supported.
+
+## Install and use
+
+Clone the repository and run the installer:
 
 ```bash
+git clone https://github.com/raulconchello/headphone-battery-bar.git
+cd headphone-battery-bar
 ./Scripts/install.sh
 ```
 
-The script builds an ad-hoc signed app, installs it in `/Applications` (or `~/Applications` if needed), and launches it. On first launch from the app bundle it enables Launch at Login, which can be turned off in the menu. macOS may require approval in System Settings. Installation preserves the previous app if replacement fails.
+The installer builds and locally signs **Headphone Battery Bar.app**, installs it in `/Applications` (or `~/Applications` if needed), and launches it. The battery indicator appears in the menu bar. It enables **Launch at Login** on first launch; macOS may require approval in System Settings.
+
+Click the indicator to refresh the reading, open G HUB, toggle **Charging Animation** or **Launch at Login**, or quit. Animation follows macOS Reduce Motion until you explicitly turn it on or off in the app's menu. G HUB needs to stay running for battery readings to work.
+
+To update later, run these commands from the repository folder:
+
+```bash
+git pull --ff-only
+./Scripts/install.sh
+```
+
+To uninstall, turn off **Launch at Login**, quit the app, and remove **Headphone Battery Bar.app** from Applications.
 
 ## How it reads the battery
 
@@ -44,3 +68,7 @@ swift run --jobs 2 HeadphoneBatteryBar --print-battery
 The diagnostic exits with status 1 if G HUB cannot be read. Disconnection is a valid snapshot and exits with status 0.
 
 `Sources/BatteryCore` contains discovery, response validation, and the local client. `Sources/HeadphoneBatteryBar` contains the AppKit interface and launch-at-login support. Tests use synthetic responses and require no connected hardware.
+
+## License
+
+[MIT](LICENSE) — Copyright © 2026 Raul Conchello.
