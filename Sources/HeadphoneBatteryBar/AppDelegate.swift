@@ -5,7 +5,7 @@ import ServiceManagement
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-    private let chargingRing = ChargingRingView(frame: .zero)
+    private let batteryIcon = BatteryIconView(frame: .zero)
     private let client = GHubClient()
     private var snapshot = HeadsetSnapshot(state: .connecting)
     private var refreshTask: Task<Void, Never>?
@@ -17,9 +17,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         statusItem.button?.imagePosition = .imageOnly
         if let button = statusItem.button {
-            chargingRing.frame = button.bounds
-            chargingRing.autoresizingMask = [.width, .height]
-            button.addSubview(chargingRing)
+            batteryIcon.frame = button.bounds
+            batteryIcon.autoresizingMask = [.width, .height]
+            button.addSubview(batteryIcon)
         }
         configureLaunchAtLoginOnce()
         render()
@@ -33,7 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         notifications.addObserver(
             self, selector: #selector(willSleep), name: NSWorkspace.willSleepNotification, object: nil)
         notifications.addObserver(
-            self, selector: #selector(updateChargingRing),
+            self, selector: #selector(updateBatteryIcon),
             name: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil)
     }
 
@@ -79,16 +79,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func render() {
         statusItem.button?.image = StatusItemRenderer.image(for: snapshot)
-        updateChargingRing()
+        updateBatteryIcon()
         let description = "\(snapshot.deviceName): \(snapshot.statusText)"
         statusItem.button?.toolTip = description
         statusItem.button?.setAccessibilityLabel(description)
         rebuildMenu()
     }
 
-    @objc private func updateChargingRing() {
-        chargingRing.update(
-            percent: snapshot.reading?.isCharging == true ? snapshot.reading?.percent : nil,
+    @objc private func updateBatteryIcon() {
+        batteryIcon.update(
+            reading: snapshot.reading,
             imageWidth: statusItem.button?.image?.size.width ?? 0,
             reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         )
