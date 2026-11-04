@@ -25,8 +25,9 @@ enum BatteryIconStyle {
 final class BatteryIconView: NSView {
     private let track = CAShapeLayer()
     private let charge = CAShapeLayer()
-    /// Bright sweep that fills the circle while charging, above a dim actual-level arc.
+    /// Extends the actual battery arc toward full, with a pause between fills.
     private let fill = CAShapeLayer()
+    private var fillLevel: CGFloat?
     private let headphones = CALayer()
     private let headphonesMask = CALayer()
     private var imageWidth: CGFloat = 0
@@ -68,39 +69,39 @@ final class BatteryIconView: NSView {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         charge.strokeEnd = level
-        charge.opacity = style == .charging && animateCharging ? 0.3 : 1
         updateColors()
         CATransaction.commit()
         needsLayout = true
 
         if style == .charging && animateCharging {
-            startFilling()
+            startFilling(from: level)
         } else {
             stopFilling()
         }
     }
 
-    /// A clear, forward-only sweep grows around the whole circle and fades at full.
-    /// Its phase continues across refreshes, including when the battery level changes.
-    private func startFilling() {
-        guard fill.animation(forKey: "chargingFill") == nil else { return }
+    /// Fill only the remaining gap, fade back to the actual level, and rest for 2.2s.
+    /// Refreshes at the same battery level do not restart the cycle.
+    private func startFilling(from level: CGFloat) {
+        guard fillLevel != level || fill.animation(forKey: "chargingFill") == nil else { return }
+        fillLevel = level
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        fill.strokeStart = 0
-        fill.strokeEnd = 0
+        fill.strokeStart = level
+        fill.strokeEnd = level
         CATransaction.commit()
 
-        let duration: CFTimeInterval = 2.4
+        let duration: CFTimeInterval = 4
         let grow = CAKeyframeAnimation(keyPath: "strokeEnd")
         grow.duration = duration
-        grow.values = [0, 1, 1]
-        grow.keyTimes = [0, 0.8, 1]
+        grow.values = [level, 1, 1]
+        grow.keyTimes = [0, 0.35, 1]
         grow.timingFunctions = [CAMediaTimingFunction(name: .easeInEaseOut), CAMediaTimingFunction(name: .linear)]
 
         let fade = CAKeyframeAnimation(keyPath: "opacity")
         fade.duration = duration
-        fade.values = [0, 1, 1, 0, 0]
-        fade.keyTimes = [0, 0.05, 0.8, 0.95, 1]
+        fade.values = [0, 0.85, 0.85, 0, 0]
+        fade.keyTimes = [0, 0.05, 0.35, 0.45, 1]
 
         let group = CAAnimationGroup()
         group.animations = [grow, fade]
@@ -111,6 +112,7 @@ final class BatteryIconView: NSView {
 
     private func stopFilling() {
         fill.removeAllAnimations()
+        fillLevel = nil
     }
 
     override func layout() {
