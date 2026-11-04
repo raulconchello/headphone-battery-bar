@@ -25,7 +25,7 @@ cleanup() {
         if [[ -e "$previous_app" ]]; then
             mv "$previous_app" "$destination"
             "$lsregister" -f "$destination" >/dev/null 2>&1 || true
-            open "$destination" || true
+            open -n "$destination" || true
         fi
     fi
     rm -rf "$build_root" "$backup_root"
@@ -43,6 +43,8 @@ replaced=true
 ditto "$built_app" "$destination"
 codesign --verify --deep --strict "$destination"
 "$lsregister" -f "$destination" >/dev/null
-open "$destination"
+# Force a fresh launch after replacing a running app; Launch Services can briefly
+# retain the terminated instance and otherwise return procNotFound (-600).
+open -n "$destination"
 complete=true
 echo "$destination"

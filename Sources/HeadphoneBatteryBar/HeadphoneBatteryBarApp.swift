@@ -1,5 +1,6 @@
 import AppKit
 import BatteryCore
+import Darwin
 import Foundation
 
 @main
@@ -26,6 +27,7 @@ enum HeadphoneBatteryBarApp {
         if let identifier = Bundle.main.bundleIdentifier,
             NSRunningApplication.runningApplications(withBundleIdentifier: identifier).contains(where: {
                 $0.processIdentifier != ProcessInfo.processInfo.processIdentifier
+                    && !$0.isTerminated && kill($0.processIdentifier, 0) == 0
             })
         {
             return
