@@ -5,6 +5,7 @@ import ServiceManagement
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+    private let chargingRing = ChargingRingView(frame: .zero)
     private let client = GHubClient()
     private var snapshot = HeadsetSnapshot(state: .connecting)
     private var refreshTask: Task<Void, Never>?
@@ -15,6 +16,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         statusItem.button?.imagePosition = .imageOnly
+        if let button = statusItem.button {
+            chargingRing.frame = button.bounds
+            chargingRing.autoresizingMask = [.width, .height]
+            button.addSubview(chargingRing)
+        }
         configureLaunchAtLoginOnce()
         render()
         refresh()
@@ -26,6 +32,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self, selector: #selector(didWake), name: NSWorkspace.didWakeNotification, object: nil)
         notifications.addObserver(
             self, selector: #selector(willSleep), name: NSWorkspace.willSleepNotification, object: nil)
+        notifications.addObserver(
+            self, selector: #selector(updateChargingRing),
+            name: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -70,10 +79,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func render() {
         statusItem.button?.image = StatusItemRenderer.image(for: snapshot)
+        updateChargingRing()
         let description = "\(snapshot.deviceName): \(snapshot.statusText)"
         statusItem.button?.toolTip = description
         statusItem.button?.setAccessibilityLabel(description)
         rebuildMenu()
+    }
+
+    @objc private func updateChargingRing() {
+        chargingRing.update(
+            percent: snapshot.reading?.isCharging == true ? snapshot.reading?.percent : nil,
+            imageWidth: statusItem.button?.image?.size.width ?? 0,
+            reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        )
     }
 
     private func rebuildMenu() {

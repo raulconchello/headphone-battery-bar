@@ -1,6 +1,6 @@
 # Headphone Battery Bar
 
-A small native macOS menu-bar app for the Logitech G522 LIGHTSPEED. A thin circular battery gauge surrounds a headphone symbol, followed by the remaining percentage. It uses the same sizes, type, and gauge style as [AI Usage Bar](https://github.com/raulconchello/ai-usage-bar). The monochrome icon adapts to light and dark menu bars; a small lightning bolt appears while charging.
+A small native macOS menu-bar app for the Logitech G522 LIGHTSPEED. A thin circular battery gauge surrounds a headphone symbol, followed by the remaining percentage. It uses the same sizes, type, and gauge style as [AI Usage Bar](https://github.com/raulconchello/ai-usage-bar). The icon adapts to light and dark menu bars. While charging, the circle turns green and gently pulses; the arc still shows the actual battery level. The pulse uses Core Animation and stops when charging ends or the data becomes unavailable. With macOS Reduce Motion enabled, the charging circle stays green without pulsing.
 
 Click the item to see battery and charging details, refresh, open G HUB, change Launch at Login, or quit. The app refreshes every 30 seconds and immediately after waking from sleep. If the headset disconnects or G HUB becomes unavailable, the percentage becomes a dash and the menu explains the status. It automatically recovers on the next refresh.
 
