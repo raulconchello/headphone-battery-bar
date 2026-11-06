@@ -2,11 +2,11 @@
 
 A **vibe-coded project**, built and iterated with AI to keep my headphones' battery level visible in the macOS menu bar. I wanted to check the battery at a glance without opening Logitech G HUB.
 
-The app is written in Swift and AppKit for the **Logitech G522 LIGHTSPEED**. The menu-bar icon is a headphone glyph inside a rounded square of ten segments, one per 10%, since the G522 reports its battery in 10% steps. The exact percentage is in the menu and the tooltip.
+The app is written in Swift and AppKit for the **Logitech G522 LIGHTSPEED**. The menu-bar icon is a headphone glyph inside a rounded square of ten segments, one per 10%, since the G522 reports its battery in 10% steps. The exact percentage sits beside it, in the same color as the icon.
 
 - **Charging:** the icon turns green. An optional animation pulses the next segment, the 10% that is filling. The lit segments stay steady.
 - **Low battery:** when unplugged, the icon turns orange at 20% and red at 10% or less.
-- **Disconnected or unavailable:** the whole icon goes faint, with details in the menu.
+- **Disconnected or unavailable:** the icon goes faint and the percentage becomes a dash, with details in the menu.
 
 Battery readings refresh every 30 seconds and after waking from sleep.
 
